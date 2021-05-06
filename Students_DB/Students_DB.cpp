@@ -127,24 +127,28 @@ public:
 
 };
 
-
 /// <summary>
 /// Создаёт файл, выполняет необходимые действия с ним и закрывает при разрушении
 /// </summary>
 class FileManager : public Student
 {
-	ofstream file;
+	ofstream fileWrite;
+	ifstream fileRead;
+
+	int curLine = 0;
+
+	string tLine; // Временная перменная для записи строки из файла
 
 public:
 
 	/// <summary>
-	/// Создает БД студентов открытую на запись и чтение, и проверяет успешность открытия
+	/// Создает БД студентов открытую на запись, и проверяет успешность открытия
 	/// </summary>
-	void createFile()
+	void openToWrite()
 	{
-		file.open("StudentsData.txt");
+		fileWrite.open("StudentsData.txt");
 
-		if (!(file.is_open()))
+		if (!(fileWrite.is_open()))
 		{
 			cout << "\nФайл не был создан!!!\n";
 		} // Проверка на открытие файла
@@ -157,56 +161,124 @@ public:
 	}
 
 	/// <summary>
+	/// Открывает файл для чтения и проверяет успешность открытия
+	/// </summary>
+	void openToRead()
+	{
+		fileRead.open("StudentsData.txt");
+
+		if (!(fileRead.is_open()))
+		{
+			cout << "\nФайл не был открыт для чтения !!!\n";
+			system("pause");
+		} // Проверка на открытие файла
+
+	}
+
+	/// <summary>
 	/// Записывает в файл данные о студенте из класса Student
 	/// </summary>
 	void writeInFile()
 	{
 		addStudentData();
 
-		file << fullName.firstName << ' ' << fullName.secondName << ' ' << fullName.thirdName;
-		file << endl;
+		fileWrite << fullName.firstName << ' ' << fullName.secondName << ' ' << fullName.thirdName;
+		fileWrite << endl;
 
-		file << birthData.day << '.' << birthData.month << '.' << birthData.year;
-		file << endl;
+		fileWrite << birthData.day << '.' << birthData.month << '.' << birthData.year;
+		fileWrite << endl;
 
-		file << startYear;
-		file << endl;
+		fileWrite << startYear;
+		fileWrite << endl;
 
-		file << faculty;
-		file << endl;
+		fileWrite << faculty;
+		fileWrite << endl;
 
-		file << department;
-		file << endl;
+		fileWrite << department;
+		fileWrite << endl;
 
-		file << group;
-		file << endl;
+		fileWrite << group;
+		fileWrite << endl;
 
-		file << recordBookNumber;
-		file << endl;
+		fileWrite << recordBookNumber;
+		fileWrite << endl;
 
-		file << sex;
-		file << endl;
+		fileWrite << sex;
+		fileWrite << endl;
 
 		for (int i = 0; i < sessionCount; i++)
 		{
-			file << i + 1;
-			file << endl;
+			fileWrite << i + 1;
+			fileWrite << endl;
 
 			for (int j = 0; j < subjectsCount; j++)
 			{
-				file << subjects[i][j].name;
-				file << endl;
-				file << subjects[i][j].mark;
-				file << endl;
+				fileWrite << subjects[i][j].name;
+				fileWrite << endl;
+				fileWrite << subjects[i][j].mark;
+				fileWrite << endl;
 			}
 		}
 	}
 
-	void searchData(string name1, string name2, string name3)
+	void printInfo(int startPos, int endPos)
 	{
+		curLine = 0;
+
+		cout << "\nДанные о студенте:\n";
+
+		while (getline(fileRead, tLine))
+		{
+			if (startPos == 1)
+			{
+				if (curLine < endPos)
+				{
+					cout << tLine;
+					cout << endl;
+				}
+			}
+			else
+			{
+				if ((curLine >= startPos) && (curLine < endPos))
+				{
+					cout << tLine;
+					cout << endl;
+				}
+			}
+			
+			curLine++;
+		}
+	}
+
+	/// <summary>
+	/// Ищет в файле строку с введенным ФИО
+	/// </summary>
+	/// <param name="name1">  Имя  </param>
+	/// <param name="name2">  Фамилия  </param>
+	/// <param name="name3">  Отчество  </param>
+	/// <returns>Возвращает целое число -  номер строки с необходимой информацией</returns>
+	int searchData(string name1, string name2, string name3)
+	{
+
+		openToRead();
+
+		string fullLine = name1 + ' ' + name2 + ' ' + name3; // Введенное ФИО с пробелами
+
+		while (getline(fileRead, tLine)) 
+		{ 
+			curLine++;
+			if (tLine.find(fullLine) != string::npos) 
+			{
+				return curLine;
+			}
+		}
 
 	}
 
+	/// <summary>
+	/// Функция посика номера зачётной книжки в файле
+	/// </summary>
+	/// <param name="bookNumber"> Номер зачётной книжки</param>
 	void searchData(string bookNumber)
 	{
 
@@ -214,7 +286,8 @@ public:
 
 	~FileManager()
 	{
-		file.close();
+		fileWrite.close();
+		fileRead.close();
 	}
 };
 
@@ -246,7 +319,7 @@ public:
 		{
 		case 1:
 		{
-			createFile();
+			openToWrite();
 			system("cls");
 			return 1;
 		}
@@ -279,7 +352,11 @@ public:
 				cin.ignore();
 				cin >> tFullName.thirdName;
 				cout << endl;
-				searchData(tFullName.firstName, tFullName.secondName, tFullName.thirdName);
+
+				printInfo(searchData(tFullName.firstName, tFullName.secondName, tFullName.thirdName) , 8 ); // Поиск строки с ФИО  нужного студента и отображение информации о нём
+				system("pause");
+				system("cls");
+				return 1;
 
 			}
 			case 2:
