@@ -11,12 +11,16 @@ const int sessionCount = 2; // Кол-во сессий
 
 const int subjectsCount = 2; // Кол-во предметов
 
+int studentsCount = 0;
+
+
 struct BirthDataTemplate
 {
 	int day;
 	int month;
 	int year;
 };
+
 
 struct SubjectTemplate
 {
@@ -25,12 +29,14 @@ struct SubjectTemplate
 	int mark;
 };
 
+
 struct FullNameTemplate
 {
 	string firstName;
 	string secondName;
 	string thirdName;
 };
+
 
 /// <summary>
 /// Хранит в себе все необходимые данные о студенте
@@ -52,8 +58,14 @@ class Student
 
 public:
 
+	/// <summary>
+	/// Записывает данные о студенте, считываемые с клавиатуры
+	/// </summary>
 	void addStudentData()
 	{
+
+		studentsCount++;
+
 		cout << "\n\nВведите ФИО студента -> ";
 		cin >> fullName.firstName;
 		cin.ignore();
@@ -113,104 +125,115 @@ public:
 
 	}
 
-	Student()
-	{
-		cout << "\nСоздание объекта класса Student\n";
-	}
-
-	~Student()
-	{
-		cout << "\nУдаление объекта класса Student\n";
-	}
-
 };
 
+
 /// <summary>
-/// Создаёт файл и выполняет необходимые действия с ним
+/// Создаёт файл, выполняет необходимые действия с ним и закрывает при разрушении
 /// </summary>
 class FileManager : public Student
 {
-	ofstream fileWrite;
-	ifstream fileRead;
+	ofstream file;
 
 public:
 
+	/// <summary>
+	/// Создает БД студентов открытую на запись и чтение, и проверяет успешность открытия
+	/// </summary>
 	void createFile()
 	{
-		fileWrite.open("StudentsData.txt");
-		fileRead.open("StudentsData.txt");
+		file.open("StudentsData.txt");
+
+		if (!(file.is_open()))
+		{
+			cout << "\nФайл не был создан!!!\n";
+		} // Проверка на открытие файла
+		else
+		{
+			cout << "\nФайл успешно создан!\n\n";
+		}
+
+		system("pause");
 	}
 
-	void deleteFile()
-	{
-		fileWrite.close();
-		fileRead.close();
-	}
-
+	/// <summary>
+	/// Записывает в файл данные о студенте из класса Student
+	/// </summary>
 	void writeInFile()
 	{
 		addStudentData();
 
-		fileWrite << fullName.firstName << ' ' << fullName.secondName << ' ' << fullName.thirdName;
-		fileWrite << endl;
+		file << fullName.firstName << ' ' << fullName.secondName << ' ' << fullName.thirdName;
+		file << endl;
 
-		fileWrite << birthData.day << '.' << birthData.month << '.' << birthData.year;
-		fileWrite << endl;
+		file << birthData.day << '.' << birthData.month << '.' << birthData.year;
+		file << endl;
 
-		fileWrite << startYear;
-		fileWrite << endl;
+		file << startYear;
+		file << endl;
 
-		fileWrite << faculty;
-		fileWrite << endl;
+		file << faculty;
+		file << endl;
 
-		fileWrite << department;
-		fileWrite << endl;
+		file << department;
+		file << endl;
 
-		fileWrite << group;
-		fileWrite << endl;
+		file << group;
+		file << endl;
 
-		fileWrite << recordBookNumber;
-		fileWrite << endl;
+		file << recordBookNumber;
+		file << endl;
 
-		fileWrite << sex;
-		fileWrite << endl;
+		file << sex;
+		file << endl;
 
 		for (int i = 0; i < sessionCount; i++)
 		{
-			fileWrite << i + 1;
-			fileWrite << endl;
+			file << i + 1;
+			file << endl;
 
 			for (int j = 0; j < subjectsCount; j++)
 			{
-				fileWrite << subjects[i][j].name;
-				fileWrite << endl;
-				fileWrite << subjects[i][j].mark;
-				fileWrite << endl;
+				file << subjects[i][j].name;
+				file << endl;
+				file << subjects[i][j].mark;
+				file << endl;
 			}
 		}
 	}
 
-	FileManager()
+	void searchData(string name1, string name2, string name3)
 	{
-		cout << "\nСоздаём объект класса FileManager\n";
+
+	}
+
+	void searchData(string bookNumber)
+	{
+
 	}
 
 	~FileManager()
 	{
-		cout << "\nУдаление объекта класса FileManager\n";
+		file.close();
 	}
 };
 
 /// <summary>
-/// Класс меню. Отвечает за выбор пользователем опций
+/// Отвечает за управление БД
 /// </summary>
 class MenuPattern : public FileManager
 {
+	string tRecordBookNumber; // Переменная поиска по зачётке
+	FullNameTemplate tFullName; // Переменная поиска по ФИО
 
 	int menu; // Переменная выбора опции
 
 public:
 
+	/// <summary>
+	/// Создаёт консольный интерфейс меню
+	/// </summary>
+	/// <returns>Возвращает 1 до тех пор пока пользователь не решит выйти</returns>
 	int startMenu()
 	{
 		menu = 0;
@@ -224,8 +247,6 @@ public:
 		case 1:
 		{
 			createFile();
-			cout << "\nФайл успешно создан!!!\n\n";
-			system("pause");
 			system("cls");
 			return 1;
 		}
@@ -239,7 +260,42 @@ public:
 		}
 		case 3:
 		{
+		A:
+			system("cls");
+			cout << "\nВыберите дейтсвие:\n";
+			cout << "\n1. Поиск по ФИО\n2. Поиск по номеру зачётной книжки\n";
+			cout << "Ваш выбор -> ";
+			cin >> menu;
+			cout << endl;
 
+			switch (menu)
+			{
+			case 1:
+			{
+				cout << "\nВведите ФИО -> ";
+				cin >> tFullName.firstName;
+				cin.ignore();
+				cin >> tFullName.secondName;
+				cin.ignore();
+				cin >> tFullName.thirdName;
+				cout << endl;
+				searchData(tFullName.firstName, tFullName.secondName, tFullName.thirdName);
+
+			}
+			case 2:
+			{
+				cout << "\nВведите номер зачётной книжки -> ";
+				cin >> tRecordBookNumber;
+				cout << endl;
+				searchData(tRecordBookNumber);
+			}
+			default:
+			{
+				cout << "\nОшибка ввода повторите попытку!!!\n";
+				system("pause");
+				goto A;
+			}
+			}
 		}
 		case 4:
 		{
@@ -247,7 +303,6 @@ public:
 		}
 		case 5:
 		{
-			deleteFile();
 			system("cls");
 			return 0;
 		}
@@ -261,34 +316,28 @@ public:
 		}
 	}
 
-	MenuPattern()
-	{
-		cout << "\nСоздание объекта класса Menu\n";
-		menu = 0;
-	}
-
-	~MenuPattern()
-	{
-		cout << "\nУдаление объекта Menu\n";
-	}
-
 };
 
+/// <summary>
+/// Тело программы. Зацикливает выбор опций в  объекте меню
+/// </summary>
+/// <returns>Возвращает 0 при успешном завершении</returns>
 int main()
 {
 
-	int bugFinder = 1;
+	int indicator = 1;
 
 	SetConsoleCP(1251);
 	SetConsoleOutputCP(1251);
 
 	MenuPattern Menu;
 
-	while (bugFinder != 0)
+	while (indicator != 0)
 	{
 
-		bugFinder = Menu.startMenu();
+		indicator = Menu.startMenu();
 
 	}
 
+	return 0;
 }
