@@ -1,4 +1,11 @@
 ﻿
+// Защита от ввода (попробовать сломать всё)
+// Поправить отображение информации в printInfo (через if\switch curLine)
+// Посмотреть, где можно использовать конструктор
+// Добавить сортировку студентов (case 4)
+// Добавить отображение успеваемости (инд. задание)
+
+
 #include <iostream>
 #include <locale>
 #include <fstream>
@@ -7,11 +14,9 @@
 
 using namespace std;
 
-const int sessionCount = 2; // Кол-во сессий
+const int SESSIONNUMBER = 2; // Кол-во сессий
 
-const int subjectsCount = 2; // Кол-во предметов
-
-int studentsCount = 0;
+const int SUBJECTNUMBER = 2; // Кол-во предметов
 
 
 struct BirthDataTemplate
@@ -63,9 +68,6 @@ public:
 	/// </summary>
 	void addStudentData()
 	{
-
-		studentsCount++;
-
 		cout << "\n\nВведите ФИО студента -> ";
 		cin >> fullName.firstName;
 		cin.ignore();
@@ -75,7 +77,7 @@ public:
 		cin.ignore();
 		cout << endl;
 
-		cout << "\nВведите дату рождения ->";
+		cout << "Введите дату рождения ->";
 		cin >> birthData.day;
 		cin.ignore();
 		cin >> birthData.month;
@@ -107,11 +109,11 @@ public:
 		cin >> sex;
 		cout << endl;
 
-		for (int i = 0; i < sessionCount; i++)
+		for (int i = 0; i < SESSIONNUMBER; i++)
 		{
 			cout << "Введите для " << i + 1 << " сессии:\n";
 
-			for (int j = 0; j < subjectsCount; j++)
+			for (int j = 0; j < SUBJECTNUMBER; j++)
 			{
 				cout << "Название предмета -> ";
 				cin >> subjects[i][j].name;
@@ -135,7 +137,7 @@ class FileManager : public Student
 	ofstream fileWrite;
 	ifstream fileRead;
 
-	int curLine = 0; // Переменная для запоминания строки файла
+	int curLine; // Переменная для запоминания номера строки файла
 
 	string tLine; // Временная перменная для записи строки из файла
 
@@ -176,7 +178,7 @@ public:
 	}
 
 	/// <summary>
-	/// Записывает в файл данные о студенте из класса Student
+	/// Записывает в файл данные о студенте, взятые из класса Student
 	/// </summary>
 	void writeInFile()
 	{
@@ -206,35 +208,38 @@ public:
 		fileWrite << sex;
 		fileWrite << endl;
 
-		for (int i = 0; i < sessionCount; i++)
+		for (int i = 0; i < SESSIONNUMBER; i++)
 		{
-			fileWrite << i + 1;
+			fileWrite << "Сессия номер " << i + 1;
 			fileWrite << endl;
 
-			for (int j = 0; j < subjectsCount; j++)
+			for (int j = 0; j < SUBJECTNUMBER; j++)
 			{
-				fileWrite << subjects[i][j].name;
-				fileWrite << endl;
-				fileWrite << subjects[i][j].mark;
+				fileWrite << subjects[i][j].name << " Оценка - " << subjects[i][j].mark;
 				fileWrite << endl;
 			}
 		}
 	}
 
+	/// <summary>
+	/// Выводит в консоль данные из файла от startPos до endPos строки
+	/// </summary>
+	/// <param name="startPos"> начало вывода данных </param>
+	/// <param name="endPos"> конец вывода данных </param>
 	void printInfo(int startPos, int endPos)
 	{
-		fileRead.seekg(0, ios::beg);
+		openToRead();
 
-		curLine = 1;
-
-		cout << "\nДанные о студенте:\n";
+		curLine = 0;
 
 		if (fileRead.is_open())
 		{
+			fileRead.seekg(0, ios::beg);
+
 			while (getline(fileRead, tLine))
 			{
 
-				if ((curLine >= startPos) && (curLine <= endPos))
+				if ((curLine >= startPos - 1) && (curLine < endPos))
 				{
 
 					cout << tLine << endl;
@@ -248,15 +253,30 @@ public:
 		}
 		else
 		{
-			cout << "\n Не удалось открыть файл для чтения!!!\n";
+			cout << "\n Файл закрыт для чтения!!!\n";
 		}
+
 	}
 
-	void PrintInfo(int sessionNumber)
+	/// <summary>
+	/// Выводит на экран информацию о результатах выбранной сессии
+	/// </summary>
+	/// <param name="sessionNumber"> Номер сессии </param>
+	void PrintSessionInfo(int sessionNumber)
 	{
-		fileRead.seekg(0, ios::beg);
+		string fullLine = "Сессия номер ";
+		int tNumberLine;
+	
 
-		
+		fullLine += to_string(sessionNumber); // Получаем строку типа:  Сессия номер x
+
+		tNumberLine = searchData(fullLine); // Ищем номер строки в файле
+
+		cout << "\nДанные по " << sessionNumber << " сесии:\n";
+
+		printInfo(tNumberLine + 1, (tNumberLine + SUBJECTNUMBER)); 
+
+
 	}
 
 	/// <summary>
@@ -265,42 +285,70 @@ public:
 	/// <param name="name1">  Имя  </param>
 	/// <param name="name2">  Фамилия  </param>
 	/// <param name="name3">  Отчество  </param>
-	/// <returns>Возвращает целое число -  номер строки с необходимой информацией</returns>
+	/// <returns>Возвращает целое число -  номер искомой строки, если найдено, в противном случае -1 </returns>
 	int searchData(string name1, string name2, string name3)
 	{
 
 		openToRead();
 
+		curLine = 0;
+
 		string fullLine = name1 + ' ' + name2 + ' ' + name3; // Введенное ФИО с пробелами
 
-		while (getline(fileRead, tLine))
-		{ 
+		if (fileRead.is_open())
+		{
+			fileRead.seekg(0, ios::beg);
 
-			curLine++;
-
-			if (tLine.find(fullLine) != string::npos) 
+			while (getline(fileRead, tLine))
 			{
-				return curLine;
+
+				curLine++;
+
+				if (tLine.find(fullLine) != string::npos)
+				{
+					fileRead.close();
+					return curLine;
+				}
 			}
 		}
-
+		else
+		{
+			cout << "\nФайл закрыт для чтения!!!\n";
+			return -1;
+		}
 	}
 
-
-	int searchData(string bookNumber)
+	/// <summary>
+	/// Ищет в файле строку по введенной строке
+	/// </summary>
+	/// <param name="bookNumber"> Строка, которую нужно найти </param>
+	/// <returns> Возвращает целое число - номер искомой строки, если найдено, в противном случае -1 </returns>
+	int searchData(string fullLine)
 	{
-
 		openToRead();
 
-		while (getline(fileRead, tLine))
+		curLine = 0;
+
+		if (fileRead.is_open())
 		{
+			fileRead.seekg(0, ios::beg);
 
-			curLine++;
-
-			if (tLine.find(bookNumber) != string::npos)
+			while (getline(fileRead, tLine))
 			{
-				return curLine - 6 ;
+
+				curLine++;
+
+				if (tLine.find(fullLine) != string::npos)
+				{
+					fileRead.close();
+					return curLine;
+				}
 			}
+		}
+		else
+		{
+			cout << "\nФайл закрыт для чтения!!!\n";
+			return -1;
 		}
 	}
 
@@ -361,7 +409,7 @@ public:
 		}
 		case 3:
 		{
-		A:
+		    A:
 			system("cls");
 			cout << "\nВыберите дейтсвие:\n";
 			cout << "\n1. Поиск по ФИО\n2. Поиск по номеру зачётной книжки\n";
@@ -373,6 +421,8 @@ public:
 			{
 			case 1:
 			{
+				int indicator; // Переменная проверки ввода
+
 				cout << "\nВведите ФИО -> ";
 				cin >> tFullName.firstName;
 				cin.ignore();
@@ -381,30 +431,112 @@ public:
 				cin >> tFullName.thirdName;
 				cout << endl;
 
-				printInfo(searchData(tFullName.firstName, tFullName.secondName, tFullName.thirdName) , 8 ); // Поиск строки с ФИО  нужного студента и отображение информации о нём
+				indicator = searchData(tFullName.firstName, tFullName.secondName, tFullName.thirdName); // Поиск строки с ФИО  нужного студента 
 
+				if (indicator == -1)
+				{
+					cout << "\nТакой студент не был найден. Проверьте правильность ввода и повторите попытку\n";
+					system("pause");
+					goto A;
+				}
+
+				cout << "\nДанные о студенте:\n";
+
+				printInfo(indicator, 8);
+
+			B:
 				cout << "\nВыберите номер сессии -> ";
 				cin >> menu;
 				cout << endl;
 
-				PrintInfo(menu);
+				if ((menu < 1) && (menu > SESSIONNUMBER))
+				{
+					cout << "\nОшибка ввода, повторите попытку\n";
+					system("pause");
+					system("cls");
+					goto B;
+				}
 
-				system("pause");
-				system("cls");
-				return 1;
+				PrintSessionInfo(menu);
+			C:
+				cout << "\n\nВыберите действие:\n";
+				cout << "\n1. Выбрать другую сессию\n2. Вернуться на главный экран\n";
+				cout << "Ваш выбор -> ";
+				cin >> menu;
+				cout << endl;
 
+				if (menu == 1)
+				{
+					goto B;
+				}
+				else if (menu == 2)
+				{
+					system("cls");
+					return 1;
+				}
+				else
+				{
+					cout << "\nОшибка ввода повторите попытку!!!\n";
+					system("pause");
+					goto C;
+				}
 			}
 			case 2:
 			{
+				int indicator; // Переменная проверки ввода
+
 				cout << "\nВведите номер зачётной книжки -> ";
 				cin >> tRecordBookNumber;
 				cout << endl;
 
-				printInfo( searchData(tRecordBookNumber),  8);
+				indicator = searchData(tRecordBookNumber);
 
-				system("pause");
-				system("cls");
-				return 1;
+				if (indicator == -1)
+				{
+					cout << "\nТакой номер не был найден. Проверьте правильность ввода и повторите попытку\n";
+					system("pause");
+					goto A;
+				}
+
+				cout << "\nДанные о студенте:\n";
+
+				printInfo((indicator - 6), 8);
+			D:
+				cout << "\nВыберите номер сессии -> ";
+				cin >> menu;
+				cout << endl;
+
+				if ((menu < 1) && (menu > SESSIONNUMBER))
+				{
+					cout << "\nОшибка ввода, повторите попытку\n";
+					system("pause");
+					system("cls");
+					goto D;
+				}
+
+				PrintSessionInfo(menu);
+			E:
+				cout << "\n\nВыберите действие:\n";
+				cout << "\n1. Выбрать другую сессию\n2. Вернуться на главный экран\n";
+				cout << "Ваш выбор -> ";
+				cin >> menu;
+				cout << endl;
+
+				if (menu == 1)
+				{
+					goto D;
+				}
+				else if (menu == 2)
+				{
+					system("cls");
+					return 1;
+				}
+				else
+				{
+					cout << "\nОшибка ввода повторите попытку!!!\n";
+					system("pause");
+					goto E;
+				}
 			}
 			default:
 			{
@@ -436,7 +568,7 @@ public:
 };
 
 /// <summary>
-/// Тело программы. Зацикливает выбор опций в  объекте меню
+/// Тело программы. Зацикливает выбор опций в объекте меню
 /// </summary>
 /// <returns>Возвращает 0 при успешном завершении</returns>
 int main()
