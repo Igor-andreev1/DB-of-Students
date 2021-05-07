@@ -135,7 +135,7 @@ class FileManager : public Student
 	ofstream fileWrite;
 	ifstream fileRead;
 
-	int curLine = 0;
+	int curLine = 0; // Переменная для запоминания строки файла
 
 	string tLine; // Временная перменная для записи строки из файла
 
@@ -223,31 +223,40 @@ public:
 
 	void printInfo(int startPos, int endPos)
 	{
-		curLine = 0;
+		fileRead.seekg(0, ios::beg);
+
+		curLine = 1;
 
 		cout << "\nДанные о студенте:\n";
 
-		while (getline(fileRead, tLine))
+		if (fileRead.is_open())
 		{
-			if (startPos == 1)
+			while (getline(fileRead, tLine))
 			{
-				if (curLine < endPos)
+
+				if ((curLine >= startPos) && (curLine <= endPos))
 				{
-					cout << tLine;
-					cout << endl;
+
+					cout << tLine << endl;
+
 				}
+
+				curLine++;
 			}
-			else
-			{
-				if ((curLine >= startPos) && (curLine < endPos))
-				{
-					cout << tLine;
-					cout << endl;
-				}
-			}
-			
-			curLine++;
+
+			fileRead.close();
 		}
+		else
+		{
+			cout << "\n Не удалось открыть файл для чтения!!!\n";
+		}
+	}
+
+	void PrintInfo(int sessionNumber)
+	{
+		fileRead.seekg(0, ios::beg);
+
+		
 	}
 
 	/// <summary>
@@ -264,9 +273,11 @@ public:
 
 		string fullLine = name1 + ' ' + name2 + ' ' + name3; // Введенное ФИО с пробелами
 
-		while (getline(fileRead, tLine)) 
+		while (getline(fileRead, tLine))
 		{ 
+
 			curLine++;
+
 			if (tLine.find(fullLine) != string::npos) 
 			{
 				return curLine;
@@ -275,19 +286,36 @@ public:
 
 	}
 
-	/// <summary>
-	/// Функция посика номера зачётной книжки в файле
-	/// </summary>
-	/// <param name="bookNumber"> Номер зачётной книжки</param>
-	void searchData(string bookNumber)
+
+	int searchData(string bookNumber)
 	{
 
+		openToRead();
+
+		while (getline(fileRead, tLine))
+		{
+
+			curLine++;
+
+			if (tLine.find(bookNumber) != string::npos)
+			{
+				return curLine - 6 ;
+			}
+		}
 	}
 
 	~FileManager()
 	{
-		fileWrite.close();
-		fileRead.close();
+
+		if (!(fileWrite.is_open()))
+		{
+			fileWrite.close();
+		}
+		if (!(fileRead.is_open()))
+		{
+			fileRead.close();
+		}
+
 	}
 };
 
@@ -354,6 +382,13 @@ public:
 				cout << endl;
 
 				printInfo(searchData(tFullName.firstName, tFullName.secondName, tFullName.thirdName) , 8 ); // Поиск строки с ФИО  нужного студента и отображение информации о нём
+
+				cout << "\nВыберите номер сессии -> ";
+				cin >> menu;
+				cout << endl;
+
+				PrintInfo(menu);
+
 				system("pause");
 				system("cls");
 				return 1;
@@ -364,7 +399,12 @@ public:
 				cout << "\nВведите номер зачётной книжки -> ";
 				cin >> tRecordBookNumber;
 				cout << endl;
-				searchData(tRecordBookNumber);
+
+				printInfo( searchData(tRecordBookNumber),  8);
+
+				system("pause");
+				system("cls");
+				return 1;
 			}
 			default:
 			{
