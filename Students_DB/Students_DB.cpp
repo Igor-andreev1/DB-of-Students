@@ -10,12 +10,17 @@
 #include <string>
 #include <windows.h>
 #include <vector>
+#include <conio.h>
 
 using namespace std;
 
 const int SESSIONNUMBER = 2; // Кол-во сессий
 
 const int SUBJECTNUMBER = 2; // Кол-во предметов
+
+const int DECREMENT = SESSIONNUMBER * (SUBJECTNUMBER + 1) + 8; // Обозначает необходимое кол-во строк для возврата к  ФИО пред. студента
+
+const int THIS_YEAR = 2021;
 
 struct BirthDataTemplate
 {
@@ -57,11 +62,13 @@ class Student
 	string group;
 	string recordBookNumber;
 	char sex;
-	SubjectTemplate subjects[9][10];
+	SubjectTemplate subjects[SESSIONNUMBER][SUBJECTNUMBER];
+
+	vector<string> booksData; // Вектор для хранения номеров зачётных книжек (необходим для проверки уникальности)
 
 public:
 
-	static int studentCount;
+	static int studentCount; // Счётчик студентов
 
 	/// <summary>
 	/// Записывает данные о студенте, считываемые с клавиатуры и заносит данные об их успеваемости по сесииям в массив векторов
@@ -69,9 +76,11 @@ public:
 	void addStudentData()
 	{
 
-		studentCount++;
+		studentCount++; // Добавление нового студента
 
-		cout << "\n\nВведите ФИО студента -> ";
+		check1:
+
+		cout << "\n\nВведите ФИО студента (через пробел) -> ";
 		cin >> fullName.firstName;
 		cin.ignore();
 		cin >> fullName.secondName;
@@ -80,7 +89,14 @@ public:
 		cin.ignore();
 		cout << endl;
 
-		cout << "Введите дату рождения ->";
+		if (nameValidation() == -1)
+		{
+			goto check1;
+		}
+
+		check2:
+
+		cout << "Введите дату рождения (хх.хх.хххх) ->";
 		cin >> birthData.day;
 		cin.ignore();
 		cin >> birthData.month;
@@ -88,9 +104,24 @@ public:
 		cin >> birthData.year;
 		cout << endl;
 
+		if (birthDateValidation() == -1)
+		{
+			goto check2;
+		}
+
+		check3:
+
 		cout << "Введите год поступления -> ";
 		cin >> startYear;
 		cout << endl;
+
+		if (startYear < birthData.year)
+		{
+			cout << "\nВозможно вы ошиблись при вводе пожалуйста повторите попытку!!!\n";
+			system("pause");
+			cout << endl;
+			goto check3;
+		}
 
 		cout << "Введите факультет -> ";
 		cin >> faculty;
@@ -104,12 +135,30 @@ public:
 		cin >> group;
 		cout << endl;
 
+		check4:
+
 		cout << "Введите номер зачётной книжки -> ";
 		cin >> recordBookNumber;
 		cout << endl;
 
+		if (recordBookValidation() == -1)
+		{
+			goto check4;
+		}
+
+		check5:
+
 		cout << "Введите пол (одна буква, м/ж) -> ";
-		cin >> sex;
+		sex = _getch();
+
+		if ((sex != 'м') && (sex != 'ж'))
+		{
+			cout << "\nНерпавильный ввод, пожалуйста повторите попытку\n";
+			system("pause");
+			goto check5;
+		}
+
+		cout << endl;
 		cout << endl;
 
 		for (int i = 0; i < SESSIONNUMBER; i++)
@@ -119,17 +168,171 @@ public:
 			for (int j = 0; j < SUBJECTNUMBER; j++)
 			{
 				cout << "Название предмета -> ";
-				cin >> subjects[i][j].name;
+				cin.ignore();
+				getline(cin, subjects[i][j].name);
 				cout << endl;
+
+			check6:
 
 				cout << "Оценку -> ";
 				cin >> subjects[i][j].mark;
 				cout << endl;
+
+				if (markValidation(i,j) == -1)
+				{
+					cout << "\nНерпавильный ввод, пожалуйста повторите попытку\n";
+					system("pause");
+					goto check6;
+				}
 			}
 		}
 
 	}
 
+	/// <summary>
+	/// Проверка правильности вода ФИО
+	/// </summary>
+	/// <returns>Возвращает -1 в случае ошибки, 0 - в случае корректного ввода</returns>
+	int nameValidation()
+	{
+		string letter;
+
+		if ((fullName.firstName.size() < 2) || (fullName.firstName.size() > 12))
+		{
+			cout << "\nВозможно вы ошиблись при вводе имени пожалуйста повторите попытку!!!\n";
+			system("pause");
+			cout << endl;
+			return -1;
+		}
+
+		if ((fullName.secondName.size() < 2) || (fullName.firstName.size() > 12))
+		{
+			cout << "\nВозможно вы ошиблись при вводе имени пожалуйста повторите попытку!!!\n";
+			system("pause");
+			cout << endl;
+			return -1;
+		}
+
+		if ((fullName.thirdName.size() < 2) || (fullName.firstName.size() > 12))
+		{
+			cout << "\nВозможно вы ошиблись при вводе имени пожалуйста повторите попытку!!!\n";
+			system("pause");
+			cout << endl;
+			return -1;
+		}
+
+		for (int i = 0; i < 10; i++)
+		{
+			letter = to_string(i);
+
+			if (fullName.firstName.find(letter) != string::npos)
+			{
+				cout << "\nВозможно вы ошиблись при вводе имени пожалуйста повторите попытку!!!\n";
+				system("pause");
+				cout << endl;
+				return -1;
+			}
+
+			if (fullName.secondName.find(letter) != string::npos)
+			{
+				cout << "\nВозможно вы ошиблись при вводе имени пожалуйста повторите попытку!!!\n";
+				system("pause");
+				cout << endl;
+				return -1;
+			}
+
+			if (fullName.thirdName.find(letter) != string::npos)
+			{
+				cout << "\nВозможно вы ошиблись при вводе имени пожалуйста повторите попытку!!!\n";
+				system("pause");
+				cout << endl;
+				return -1;
+			}
+		}
+
+		return 1;
+	}
+
+	/// <summary>
+	/// Проверяет правильность ввода даты рождения
+	/// </summary>
+	/// <returns>Возвращает -1 в случае ошибки, 0 - в случае корректного ввода</returns>
+	int birthDateValidation()
+	{
+		if ((birthData.day > 31) || (birthData.day < 0))
+		{
+			cout << "\nВозможно вы ошиблись при вводе даты пожалуйста повторите попытку!!!\n";
+			system("pause");
+			cout << endl;
+			return -1;
+		}
+
+		if ((birthData.month > 12) || (birthData.month < 0))
+		{
+			cout << "\nВозможно вы ошиблись при вводе даты пожалуйста повторите попытку!!!\n";
+			system("pause");
+			cout << endl;
+			return -1;
+		}
+
+		if ((birthData.year < 1900) || (birthData.year > THIS_YEAR))
+		{
+			cout << "\nВозможно вы ошиблись при вводе даты пожалуйста повторите попытку!!!\n";
+			system("pause");
+			cout << endl;
+			return -1;
+		}
+
+		return 0;
+	}
+
+	/// <summary>
+	/// Проверяет правильность ввода номера зачётной книжки (уникальность)
+	/// </summary>
+	/// <returns>Возвращает 0 в случае уникальности номера, -1 - если повторяется</returns>
+	int recordBookValidation()
+	{
+		if (studentCount > 1)
+		{
+			for (int i = 0; i < booksData.size(); i++)
+			{
+				if (booksData[i] == recordBookNumber)
+				{
+					cout << "\nСтудент с таким номером уже существует, проверьте ввод и повторите попытку\n";
+					system("pause");
+					cout << endl;
+					return -1;
+				}
+			}
+
+			booksData.push_back(recordBookNumber);
+			return 0;
+		}
+		else
+		{
+			booksData.push_back(recordBookNumber);
+			return 0;
+		}
+	}
+
+	int markValidation(int i, int j)
+	{
+		if ((subjects[i][j].mark < 2) || (subjects[i][j].mark > 5))
+		{
+			cout << "\nОшибка ввода, повторите попытку!\n";
+			system("pause");
+			return -1;
+		}
+
+		if (!(isdigit(subjects[i][j].mark)) == 0)
+		{
+			cout << "\nОшибка ввода, повторите попытку!\n";
+			system("pause");
+			return -1;
+		}
+
+		return 0;
+	}
 };
 
 /// <summary>
@@ -144,9 +347,9 @@ class FileManager : public Student
 
 	string tLine; // Временная перменная для записи строки из файла
 
-	vector<int> v3; // Вектор, хранящий номер студентов троечников
-	vector<int> v4; // Вектор, хранящий номер студентов хорошистов
-	vector<int> v5; // Вектор, хранящий номер студентов отличников
+	vector<int> v3; // Вектор, хранящий код троечников - младший разряд числа отвечает за номер сессии от 1 до SESSIONNUMBER, а остальные цифры - порядковый номер студента
+	vector<int> v4; // Вектор, хранящий код хорошистов - младший разряд числа отвечает за номер сессии от 1 до SESSIONNUMBER, а остальные цифры - порядковый номер студента
+	vector<int> v5; // Вектор, хранящий код отличников - младший разряд числа отвечает за номер сессии от 1 до SESSIONNUMBER, а остальные цифры - порядковый номер студента
 
 	friend class MenuPattern;
 
@@ -167,8 +370,6 @@ public:
 		{
 			cout << "\nФайл успешно создан!\n\n";
 		}
-
-		system("pause");
 	}
 
 	/// <summary>
@@ -267,6 +468,11 @@ public:
 
 	}
 
+	/// <summary>
+	/// Выводит строку с веденным номером
+	/// </summary>
+	/// <param name="startFilePos"></param>
+	/// <returns> Возвращает строку </returns>
 	string getInfo(int linePos)
 	{
 		openToRead();
@@ -287,6 +493,8 @@ public:
 				curLine++;
 			}
 
+			cout << "\nСтрока с номером " << linePos << " не была найдена!\n";
+			system("pause");
 		}
 		else
 		{
@@ -304,58 +512,17 @@ public:
 		string fullLine1 = "Сессия номер ";
 		string fullLine2 = " Студента номер ";
 		int tNumberLine;
-	
+
 
 		fullLine1 += to_string(sessionNumber); // Получаем строку типа:  Сессия номер x
-		fullLine1 += fullLine2;
-		fullLine1 += to_string(studentNumber);
+		fullLine1 += fullLine2; 
+		fullLine1 += to_string(studentNumber); // Получаем строку типа:  Сессия номер x Студента номер х
 
 		tNumberLine = searchData(fullLine1); // Ищем номер строки в файле
 
 		cout << "\nДанные по " << sessionNumber << " сесии:\n";
 
-		printInfo(tNumberLine + 1, (tNumberLine + SUBJECTNUMBER)); 
-
-
-	}
-
-	/// <summary>
-	/// Ищет в файле строку с введенным ФИО
-	/// </summary>
-	/// <param name="name1">  Имя  </param>
-	/// <param name="name2">  Фамилия  </param>
-	/// <param name="name3">  Отчество  </param>
-	/// <returns>Возвращает целое число -  номер искомой строки, если найдено, в противном случае -1 </returns>
-	int searchData(string name1, string name2, string name3)
-	{
-
-		openToRead();
-
-		curLine = 0;
-
-		string fullLine = name1 + ' ' + name2 + ' ' + name3; // Введенное ФИО с пробелами
-
-		if (fileRead.is_open())
-		{
-			fileRead.seekg(0, ios::beg);
-
-			while (getline(fileRead, tLine))
-			{
-
-				curLine++;
-
-				if (tLine.find(fullLine) != string::npos)
-				{
-					fileRead.close();
-					return curLine;
-				}
-			}
-		}
-		else
-		{
-			cout << "\nФайл закрыт для чтения!!!\n";
-			return -1;
-		}
+		printInfo(tNumberLine + 1, (tNumberLine + SUBJECTNUMBER));
 	}
 
 	/// <summary>
@@ -384,6 +551,8 @@ public:
 					return curLine;
 				}
 			}
+
+			return -1;
 		}
 		else
 		{
@@ -392,6 +561,9 @@ public:
 		}
 	}
 
+	/// <summary>
+	/// Считывает строки с информацией о результатах сессий из файла и заносит данные в вектора в виде кода
+	/// </summary>
 	void countStudentsPerfomance()
 	{
 		string fullLine;
@@ -438,10 +610,14 @@ public:
 		}
 	}
 
+	/// <summary>
+	/// Выводит на экран данные о результатах сессии, вводимой с клавиатуры
+	/// </summary>
 	void showStudentPerfomance(int sessionNumber)
 	{
 		int nameMarker;
 		int Count = 0;
+		int code = 0;
 
 		cout << "\nТроечники в " << sessionNumber << " сессии:\n";
 
@@ -453,15 +629,15 @@ public:
 		{
 			for (int i = 0; i < v3.size(); i++)
 			{
-				curLine = v3[i] % 10;
+				code = v3[i] % 10;
 
-				if (curLine == sessionNumber)
+				if (code == sessionNumber)
 				{
 					Count++;
 
-					curLine = (v3[i] - curLine) / 10;
+					code = (v3[i] - code) / 10;
 
-					nameMarker = 1 + (curLine - 1) * (SESSIONNUMBER * (SUBJECTNUMBER + 1) + 8);
+					nameMarker = 1 + (code - 1) * (SESSIONNUMBER * (SUBJECTNUMBER + 1) + 8);
 
 					printInfo(nameMarker, nameMarker);
 				}
@@ -474,6 +650,7 @@ public:
 		}
 
 		Count = 0;
+		code = 0;
 
 		cout << "\nХорошисты в " << sessionNumber << " сессии:\n";
 
@@ -485,15 +662,15 @@ public:
 		{
 			for (int i = 0; i < v4.size(); i++)
 			{
-				curLine = v4[i] % 10;
+				code = v4[i] % 10;
 
-				if (curLine == sessionNumber)
+				if (code == sessionNumber)
 				{
 					Count++;
 
-					curLine = (v4[i] - curLine) / 10;
+					code = (v4[i] - code) / 10;
 
-					nameMarker = 1 + (curLine - 1) * (SESSIONNUMBER * (SUBJECTNUMBER + 1) + 8);
+					nameMarker = 1 + (code - 1) * (SESSIONNUMBER * (SUBJECTNUMBER + 1) + 8);
 
 					printInfo(nameMarker, nameMarker);
 				}
@@ -503,9 +680,10 @@ public:
 			{
 				cout << "Отсутствуют\n";
 			}
-		} 
+		}
 
 		Count = 0;
+		code = 0;
 
 		cout << "\nОтличники в " << sessionNumber << " сессии:\n";
 
@@ -517,15 +695,15 @@ public:
 		{
 			for (int i = 0; i < v5.size(); i++)
 			{
-				curLine = v5[i] % 10;
+				code = v5[i] % 10;
 
-				if (curLine == sessionNumber)
+				if (code == sessionNumber)
 				{
 					Count++;
 
-					curLine = (v5[i] - curLine) / 10;
+					code = (v5[i] - code) / 10;
 
-					nameMarker = 1 + (curLine - 1) * (SESSIONNUMBER * (SUBJECTNUMBER + 1) + 8);
+					nameMarker = 1 + (code - 1) * (SESSIONNUMBER * (SUBJECTNUMBER + 1) + 8);
 
 					printInfo(nameMarker, nameMarker);
 				}
@@ -538,47 +716,69 @@ public:
 		}
 	}
 
+	/// <summary>
+	/// Преобразует строку string типа: Предмет - оценка, в одно целое число int - оценку по предмету
+	/// </summary>
+	/// <returns> Возвращает целое число - оценку по предмету </returns>
 	int countAverageNumber(string line)
 	{
 		if (line.find('5') != string::npos)
 		{
 			return 5;
 		}
-		if (line.find('4') != string::npos)
+		else if (line.find('4') != string::npos)
 		{
 			return 4;
 		}
-		if (line.find('3') != string::npos)
+		else if (line.find('3') != string::npos)
 		{
 			return 3;
 		}
-		if (line.find('2') != string::npos)
+		else if (line.find('2') != string::npos)
 		{
 			return 2;
 		}
+		else
+		{
+			cout << "\nОшибка!!! Введена неверная строка в countAveraheNumber()\n";
+			system("pause");
+			return 0;
+		}
 	}
 
+	/// <summary>
+	/// Вычисляет порядковый номер студента по строке с его ФИО
+	/// </summary>
+	/// <returns> Возвращает порядковый номер студента </returns>
 	int getStudentNumber(int startFilePos)
 	{
-		int decrement = SESSIONNUMBER*(SUBJECTNUMBER + 1) + 8;
 		int count = 1;
 
 		if (startFilePos == 1)
 		{
 			return 1;
 		}
-		else
+		else if (startFilePos > 1)
 		{
 			while (startFilePos != 1)
 			{
-				startFilePos -= decrement;
+				startFilePos -= DECREMENT;
 				count++;
 			}
 
 			return count;
 		}
+		else
+		{
+			cout << "\nОшибка! Задана неверная строка при получении номера студента!\n";
+			return -1;
+		}
 	}
 
+	/// <summary>
+	/// Проверяет есть ли в базе данных студенты, если да, то возвращает их кол-во
+	/// </summary>
+	/// <returns> Вовзвращает кол-во студентов в БД </returns>
 	int checkForStudentCount()
 	{
 		openToRead();
@@ -592,7 +792,7 @@ public:
 				curLine++;
 			}
 
-			curLine = curLine / (8 + SESSIONNUMBER * (SUBJECTNUMBER + 1));
+			curLine = curLine / DECREMENT;
 
 			fileRead.close();
 
@@ -651,6 +851,7 @@ public:
 		case 1:
 		{
 			openToWrite();
+			system("pause");
 			system("cls");
 			return 1;
 		}
@@ -664,87 +865,71 @@ public:
 		}
 		case 3:
 		{
-		    A:
-			system("cls");
-			cout << "\nВыберите дейтсвие:\n";
-			cout << "\n1. Поиск по ФИО\n2. Поиск по номеру зачётной книжки\n";
+			A:
+			int searchedLine; 
+			int studentNumber;
+			int sessionNumber;
+
+			cout << "\nВведите номер зачётной книжки -> ";
+			cin >> tRecordBookNumber;
+			cout << endl;
+
+			searchedLine = searchData(tRecordBookNumber);
+
+			if (searchedLine == -1)
+			{
+				cout << "\nТакой номер не был найден. Проверьте правильность ввода и повторите попытку\n";
+				system("pause");
+				goto A;
+			}
+
+			searchedLine -= 6; // Возврат к строке ФИО
+
+			cout << "\nДанные о студенте:\n";
+
+			printInfo(searchedLine, searchedLine + 7); // Печатаем инфо о студенте
+
+		B:
+			cout << "\nВыберите действие:\n";
+			cout << "1. Посмотреть результаты сессий\n2. Вернуться в главное меню\n";
 			cout << "Ваш выбор -> ";
 			cin >> menu;
 			cout << endl;
 
-			switch (menu)
+			if (menu == 1)
 			{
-			case 1:
-			{
-				int indicator; // Переменная проверки ввода
-				int Count;
+				studentNumber = getStudentNumber(searchedLine); // Получаем порядковый номер студента по строке с его ФИО
 
-				cout << "\nВведите ФИО -> ";
-				cin >> tFullName.firstName;
-				cin.ignore();
-				cin >> tFullName.secondName;
-				cin.ignore();
-				cin >> tFullName.thirdName;
+				if (studentNumber == -1)
+				{
+					system("pause");
+					return 1;
+				} // Ловим ошибку
+
+			C:
+				cout << "\nВыберите номер сессии -> ";
+				cin >> sessionNumber;
 				cout << endl;
 
-				indicator = searchData(tFullName.firstName, tFullName.secondName, tFullName.thirdName); // Поиск строки с ФИО  нужного студента 
-
-				if (indicator == -1)
+				if ((sessionNumber < 1) || (sessionNumber > SESSIONNUMBER))
 				{
-					cout << "\nТакой студент не был найден. Проверьте правильность ввода и повторите попытку\n";
+					cout << "\nОшибка ввода, повторите попытку\n";
 					system("pause");
-					goto A;
+					system("cls");
+					goto C;
 				}
 
-				cout << "\nДанные о студенте:\n";
-
-				printInfo(indicator, indicator + 7);
-			Z:
-				cout << "\nВыберите действие:\n";
-				cout << "1. Посмотреть результаты сессий\n2. Вернуться в главное меню\n";
+				printSessionInfo(sessionNumber, studentNumber); // Печатаем данные по сессии
+			E:
+				cout << "\n\nВыберите действие:\n";
+				cout << "\n1. Выбрать другую сессию\n2. Вернуться на главный экран\n";
 				cout << "Ваш выбор -> ";
 				cin >> menu;
 				cout << endl;
+
 				if (menu == 1)
 				{
-
-					Count = getStudentNumber(indicator);
-				B:
-					cout << "\nВыберите номер сессии -> ";
-					cin >> menu;
-					cout << endl;
-
-					if ((menu < 1) || (menu > SESSIONNUMBER))
-					{
-						cout << "\nОшибка ввода, повторите попытку\n";
-						system("pause");
-						system("cls");
-						goto B;
-					}
-
-					printSessionInfo(menu, Count);
-				C:
-					cout << "\n\nВыберите действие:\n";
-					cout << "\n1. Выбрать другую сессию\n2. Вернуться на главный экран\n";
-					cout << "Ваш выбор -> ";
-					cin >> menu;
-					cout << endl;
-
-					if (menu == 1)
-					{
-						goto B;
-					}
-					else if (menu == 2)
-					{
-						system("cls");
-						return 1;
-					}
-					else
-					{
-						cout << "\nОшибка ввода повторите попытку!!!\n";
-						system("pause");
-						goto C;
-					}
+					goto C;
 				}
 				else if (menu == 2)
 				{
@@ -755,107 +940,31 @@ public:
 				{
 					cout << "\nОшибка ввода повторите попытку!!!\n";
 					system("pause");
-					goto Z;
+					goto E;
 				}
 			}
-			case 2:
+			else if (menu == 2)
 			{
-				int indicator; // Переменная проверки ввода
-				int Count;
-
-				cout << "\nВведите номер зачётной книжки -> ";
-				cin >> tRecordBookNumber;
-				cout << endl;
-
-				indicator = searchData(tRecordBookNumber);
-				indicator -= 6;
-
-				if (indicator == -1)
-				{
-					cout << "\nТакой номер не был найден. Проверьте правильность ввода и повторите попытку\n";
-					system("pause");
-					goto A;
-				}
-
-				cout << "\nДанные о студенте:\n";
-
-				printInfo(indicator, indicator + 7);
-
-			Y:
-				cout << "\nВыберите действие:\n";
-				cout << "1. Посмотреть результаты сессий\n2. Вернуться в главное меню\n";
-				cout << "Ваш выбор -> ";
-				cin >> menu;
-				cout << endl;
-
-				if (menu == 1) 
-				{
-
-					Count = getStudentNumber(indicator);
-				D:
-					cout << "\nВыберите номер сессии -> ";
-					cin >> menu;
-					cout << endl;
-
-					if ((menu < 1) || (menu > SESSIONNUMBER))
-					{
-						cout << "\nОшибка ввода, повторите попытку\n";
-						system("pause");
-						system("cls");
-						goto D;
-					}
-
-					printSessionInfo(menu, Count);
-				E:
-					cout << "\n\nВыберите действие:\n";
-					cout << "\n1. Выбрать другую сессию\n2. Вернуться на главный экран\n";
-					cout << "Ваш выбор -> ";
-					cin >> menu;
-					cout << endl;
-
-					if (menu == 1)
-					{
-						goto D;
-					}
-					else if (menu == 2)
-					{
-						system("cls");
-						return 1;
-					}
-					else
-					{
-						cout << "\nОшибка ввода повторите попытку!!!\n";
-						system("pause");
-						goto E;
-					}
-				}
-				else if (menu == 2)
-				{
-					system("cls");
-					return 1;
-				}
-				else
-				{
-					cout << "\nОшибка ввода повторите попытку!!!\n";
-					system("pause");
-					goto Z;
-				}
+				system("cls");
+				return 1;
 			}
-			default:
+			else
 			{
 				cout << "\nОшибка ввода повторите попытку!!!\n";
 				system("pause");
-				goto A;
-			}
+				goto B;
 			}
 		}
 		case 4:
 		{
-			studentCount = checkForStudentCount();
+			if (studentCount < 1)
+			{
+				studentCount = checkForStudentCount();
+			}
 
 			countStudentsPerfomance();
 
-			A1:
+		A1:
 			cout << "\nВведите номер сессии -> ";
 			cin >> menu;
 			cout << endl;
@@ -869,7 +978,7 @@ public:
 
 			showStudentPerfomance(menu);
 
-			A2:
+		A2:
 			cout << "\nВыберите действие:\n";
 			cout << "\n1. Выбрать другую сессию\n2. Вернуться в главное меню\n";
 			cout << "\nВаш выбор -> ";
