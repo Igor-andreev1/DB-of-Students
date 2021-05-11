@@ -1,8 +1,8 @@
 ﻿
-// Добавить описание ко всем фукнциям и объяснения ко всем ??? строкам
-// Защита от ввода (попробовать сломать всё)
-// Посмотреть, где можно использовать конструктор
-// Полный анализ оптимизации (ломается при долгой возне в case 3 при переходе в case 4)
+// Добавить функцию удаления студента
+// посмотреть searchData (возвращает на 1 больше нужного)
+// Поломать все вводы
+// Добавить описание ко всему
 
 #include <iostream>
 #include <locale>
@@ -11,6 +11,7 @@
 #include <windows.h>
 #include <vector>
 #include <conio.h>
+#include <cstdio>
 
 using namespace std;
 
@@ -21,6 +22,8 @@ const int SUBJECTNUMBER = 2; // Кол-во предметов
 const int DECREMENT = SESSIONNUMBER * (SUBJECTNUMBER + 1) + 8; // Обозначает необходимое кол-во строк для возврата к  ФИО пред. студента
 
 const int THIS_YEAR = 2021;
+
+int mode;
 
 struct BirthDataTemplate
 {
@@ -351,6 +354,8 @@ class FileManager : public Student
 	vector<int> v4; // Вектор, хранящий код хорошистов - младший разряд числа отвечает за номер сессии от 1 до SESSIONNUMBER, а остальные цифры - порядковый номер студента
 	vector<int> v5; // Вектор, хранящий код отличников - младший разряд числа отвечает за номер сессии от 1 до SESSIONNUMBER, а остальные цифры - порядковый номер студента
 
+	vector<string> oldData;
+
 	friend class MenuPattern;
 
 public:
@@ -375,16 +380,48 @@ public:
 	/// <summary>
 	/// Открывает файл для чтения и проверяет успешность открытия
 	/// </summary>
-	void openToRead()
+	void openToRead(int mode)
 	{
-		fileRead.open("StudentsData.txt");
-
-		if (!(fileRead.is_open()))
+		switch(mode)
 		{
-			cout << "\nФайл не был открыт для чтения !!!\n";
-			system("pause");
-		} // Проверка на открытие файла
+		case 0:
+		{
+			fileRead.open("StudentsData.txt");
 
+			if (!(fileRead.is_open()))
+			{
+				cout << "\nФайл не был открыт для чтения !!!\n";
+				system("pause");
+			} // Проверка на открытие файла
+
+			break;
+		}
+		case 1:
+		{
+			fileRead.open("TemporaryStudentsData.txt");
+
+			if (!(fileRead.is_open()))
+			{
+				cout << "\nФайл не был открыт для чтения !!!\n";
+				system("pause");
+			} // Проверка на открытие файла
+
+			break;
+		}
+		}
+	}
+
+	/// <summary>
+	/// Создаёт временный файл для записи
+	/// </summary>
+	void createNewTemporaryFile()
+	{
+		fileWrite.open("TemporaryStudentsData.txt");
+
+		if (!(fileWrite.is_open()))
+		{
+			cout << "\nФайл не был создан!!!\n";
+		} // Проверка на открытие файла
 	}
 
 	/// <summary>
@@ -438,7 +475,7 @@ public:
 	/// <param name="endPos"> конец вывода данных </param>
 	void printInfo(int startPos, int endPos)
 	{
-		openToRead();
+		openToRead(mode);
 
 		curLine = 0;
 
@@ -475,7 +512,7 @@ public:
 	/// <returns> Возвращает строку </returns>
 	string getInfo(int linePos)
 	{
-		openToRead();
+		openToRead(mode);
 
 		curLine = 0;
 
@@ -532,17 +569,17 @@ public:
 	/// <returns> Возвращает целое число - номер искомой строки, если найдено, в противном случае -1 </returns>
 	int searchData(string fullLine)
 	{
-		openToRead();
+		openToRead(mode);
 
 		curLine = 0;
 
 		if (fileRead.is_open())
 		{
+
 			fileRead.seekg(0, ios::beg);
 
 			while (getline(fileRead, tLine))
 			{
-
 				curLine++;
 
 				if (tLine.find(fullLine) != string::npos)
@@ -781,7 +818,7 @@ public:
 	/// <returns> Вовзвращает кол-во студентов в БД </returns>
 	int checkForStudentCount()
 	{
-		openToRead();
+		openToRead(mode);
 
 		if (fileRead.is_open())
 		{
@@ -805,9 +842,96 @@ public:
 		}
 	}
 
-	~FileManager()
+	void changeStudentData(int line)
 	{
+		int studentNumber;
 
+		studentNumber = getStudentNumber(line);
+
+		fileWrite.close();
+
+		createNewTemporaryFile();
+
+		if (line == 1)
+		{
+			saveOldData(line);
+		}
+		else
+		{
+			saveOldData(line);
+		}
+
+		if (studentNumber == 1)
+		{
+			studentCount = studentNumber - 1;
+
+			writeInFile();
+
+			copyFromOldData(0, oldData.size());
+		}
+		else if (studentNumber == studentCount)
+		{
+			studentCount = studentNumber - 1;
+
+			copyFromOldData(0, oldData.size());
+
+			writeInFile();
+		}
+		else
+		{
+			studentCount = studentNumber - 1;
+
+			copyFromOldData(0, line - 1);
+
+			writeInFile();
+
+			copyFromOldData(line - 1, oldData.size());
+		}
+
+		mode = 1;
+
+		remove("StudentsData.txt");
+	}
+
+	void saveOldData(int startPos)
+	{
+		curLine = 0;
+
+		openToRead(mode);
+
+		if (fileRead.is_open())
+		{
+			fileRead.seekg(0, ios::beg);
+
+			while (getline(fileRead, tLine))
+			{
+				if ((curLine < startPos - 1) || (curLine >= startPos + DECREMENT - 1))
+				{
+					oldData.push_back(tLine);
+				}
+
+				curLine++;
+			}
+
+			fileRead.close();
+		}
+		else
+		{
+			cout << "\nФайл закрыт для чтения!!!\n";
+		}
+	}
+
+	void copyFromOldData(int start, int end)
+	{
+		for (int i = start; i < end; i++)
+		{
+			fileWrite << oldData[i];
+			fileWrite << endl;
+		}
+	}
+
+	void closeAll()
+	{
 		if (!(fileWrite.is_open()))
 		{
 			fileWrite.close();
@@ -816,7 +940,57 @@ public:
 		{
 			fileRead.close();
 		}
+	}
 
+	void deleteRecordBookNumber(string rbNumber)
+	{
+		int elem;
+
+		for (int i = 0; i < booksData.size(); i++)
+		{
+			if (booksData[i] == rbNumber)
+			{
+				elem = i;
+			}
+		}
+
+		booksData.erase(booksData.begin() + elem);
+	}
+
+	void checkRBNumber(int studentsNumber)
+	{
+		int coef = searchData("Номер зачётной книжки - ") - 1;
+
+
+		for (int i = 0; i < studentsNumber; i++)
+		{
+			tLine = getInfo(coef + DECREMENT*i);
+
+			tLine.erase(0, 24);
+
+			booksData.push_back(tLine);
+		}
+	}
+
+	FileManager()
+	{
+		mode = 0;
+
+		studentCount = checkForStudentCount();
+
+		if (studentCount != 0)
+		{
+			checkRBNumber(studentCount);
+		}
+	}
+
+	~FileManager()
+	{
+		closeAll();
+
+		fileWrite.close();
+
+		rename("TemporaryStudentsData.txt", "StudentsData.txt");
 	}
 };
 
@@ -841,7 +1015,7 @@ public:
 		menu = 0;
 
 		cout << "\nВыберите действие:\n";
-		cout << "\n1. Создать базу данных студентов\n2. Записать данные студента в базу данных\n3. Узнать данные студента\n4. Посмотреть успеваемость студентов\n5. Выйти из программы\n";
+		cout << "\n1. Создать базу данных студентов\n2. Записать данные студента в базу данных\n3. Узнать данные студента\n4. Изменить данные студента\n5. Удалить данные студента\n6. Посмотреть успеваемость студентов\n7. Выйти из программы\n";
 		cout << "Ваш выбор -> ";
 		cin >> menu;
 		cout << endl;
@@ -851,6 +1025,7 @@ public:
 		case 1:
 		{
 			openToWrite();
+
 			system("pause");
 			system("cls");
 			return 1;
@@ -858,6 +1033,7 @@ public:
 		case 2:
 		{
 			writeInFile();
+
 			cout << endl;
 			system("pause");
 			system("cls");
@@ -957,6 +1133,43 @@ public:
 		}
 		case 4:
 		{
+		begin:
+
+			int tLine;
+
+			cout << "\nВведите номер зачётной книжки студента, данные которого нужно изменить  -> ";
+			cin >> tRecordBookNumber;
+			cout << endl;
+
+			tLine = searchData(tRecordBookNumber);
+
+			if (tLine == -1)
+			{
+				cout << "\nТакой номер не был найден. Проверьте правильность ввода и повторите попытку\n";
+				system("pause");
+				goto begin;
+			}
+
+			tLine -= 6; // Возврат к строке ФИО
+
+			cout << "\nВведите новые данные студента:\n";
+
+			deleteRecordBookNumber(tRecordBookNumber);
+
+			changeStudentData(tLine);
+
+			cout << "\nДанные успешно изменены!\n";
+			system("pause");
+			system("cls");
+
+			return 1;
+		}
+		case 5:
+		{
+
+		}
+		case 6:
+		{
 			if (studentCount < 1)
 			{
 				studentCount = checkForStudentCount();
@@ -1001,7 +1214,7 @@ public:
 				goto A2;
 			}
 		}
-		case 5:
+		case 7:
 		{
 			system("cls");
 			return 0;
