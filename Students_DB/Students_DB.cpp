@@ -1,13 +1,10 @@
 ﻿
-// case 6: Добавить Запоминание успеваемости студентов 
-// 
 // Проверить вводы данных
+// Добавить полное описание
 // 
 // Иcпользовать виртуальные функции
 // Иcпользовать перегрузка операторов
-// Иcпользовать шифрование + дешфирование
 
-// Контрольный запуск
 // Сделать блок-схему
 // Подготовить отчёт
 
@@ -446,13 +443,16 @@ public:
 		studentCount = 0;
 
 		booksData.clear();
+		v5.clear();
+		v4.clear();
+		v3.clear();
 
 		fileWrite.open("StudentsData.txt");
 
 		if (!(fileWrite.is_open()))
 		{
 			cout << "\nФайл не был создан!!!\n";
-		} // Проверка на открытие файла
+		} 
 		else
 		{
 			cout << "\nФайл успешно создан!\n\n";
@@ -641,6 +641,7 @@ public:
 		else
 		{
 			cout << "\n Файл закрыт для чтения!!!\n";
+			return "Error!!!";
 		}
 
 	}
@@ -710,7 +711,7 @@ public:
 	{
 		string fullLine;
 		string fullLine1;
-		int tNumberLine = 0;
+		int tNumberLine;
 		int averageNumber;
 
 		for (int j = 0; j < studentCount; j++)
@@ -727,17 +728,14 @@ public:
 				fullLine += fullLine1;
 				fullLine += to_string(j + 1);
 
-				cout << "\n Искомая строка - (" << fullLine << ") \n";
-
-				tNumberLine = searchData(fullLine);
-
-				cout << "\n Найдено на - (" << tNumberLine << ") \n";
-				system("pause");
-
-				if (tNumberLine == -1)
+				string temporary = getInfo(j * DECREMENT);
+				
+				if (temporary == "----------")
 				{
 					break;
 				}
+
+				tNumberLine = searchData(fullLine);
 
 				for (int k = 0; k < SUBJECTNUMBER; k++)
 				{
@@ -966,6 +964,7 @@ public:
 	void changeStudentData(int line)
 	{
 		int studentNumber;
+		int tStudentCount;
 
 		studentNumber = getStudentNumber(line);
 
@@ -973,8 +972,11 @@ public:
 
 		createNewTemporaryFile(mode);
 
+		oldData.clear();
+
 		saveOldData(line);
 
+		tStudentCount = studentCount;
 		studentCount = studentNumber - 1;
 
 		if (studentNumber == 1)
@@ -983,7 +985,7 @@ public:
 
 			copyFromOldData(0, oldData.size());
 		}
-		else if (studentNumber == studentCount)
+		else if (studentNumber == tStudentCount)
 		{
 			copyFromOldData(0, oldData.size());
 
@@ -1010,12 +1012,14 @@ public:
 
 			remove("TemporaryStudentsData.txt");
 		}
+
+		studentCount = tStudentCount;
 	}
 
 	/// <summary>
 	/// Сохраняет неизмененные данные из файла
 	/// </summary>
-	/// <param name="startPos"> номер строки, начниная с которой данные изменены </param>
+	/// <param name="startPos"> номер строки, начниная с которой данные изменены, если передать -1, то все данные будут скопированы </param>
 	void saveOldData(int startPos)
 	{
 		curLine = 0;
@@ -1026,14 +1030,23 @@ public:
 		{
 			fileRead.seekg(0, ios::beg);
 
-			while (getline(fileRead, tLine))
+			if (startPos != -1)
 			{
-				if ((curLine < startPos - 1) || (curLine >= startPos + DECREMENT - 1))
+				while (getline(fileRead, tLine))
+				{
+					if ((curLine < startPos - 1) || (curLine >= startPos + DECREMENT - 1))
+					{
+						oldData.push_back(tLine);
+					}
+					curLine++;
+				}
+			}
+			else
+			{
+				while (getline(fileRead, tLine))
 				{
 					oldData.push_back(tLine);
 				}
-
-				curLine++;
 			}
 
 			fileRead.close();
@@ -1100,6 +1113,8 @@ public:
 
 		studentNumber = getStudentNumber(line);
 
+		clearStudentPerfomance(studentNumber);
+
 		fileWrite.close();
 
 		createNewTemporaryFile(mode);
@@ -1110,7 +1125,7 @@ public:
 		{
 			for (int i = 0; i < DECREMENT; i++)
 			{
-				fileWrite << " \n";
+				fileWrite << "----------\n";
 			}
 
 			copyFromOldData(0, oldData.size());
@@ -1121,7 +1136,7 @@ public:
 
 			for (int i = 0; i < DECREMENT; i++)
 			{
-				fileWrite << " \n";
+				fileWrite << "----------\n";
 			}
 		}
 		else
@@ -1130,7 +1145,7 @@ public:
 
 			for (int i = 0; i < DECREMENT; i++)
 			{
-				fileWrite << " \n";
+				fileWrite << "----------\n";
 			}
 
 			copyFromOldData(line - 1, oldData.size());
@@ -1154,13 +1169,55 @@ public:
 		}
 	}
 
+	void clearStudentPerfomance(int StudentNumber)
+	{
+		int temp;
+
+		for (int i = 0; i < v5.size(); i++)
+		{
+			temp = v5[i] / 10;
+
+			if (temp == StudentNumber)
+			{
+				v5.erase(v5.begin() + i);
+			}
+		}
+
+		for (int i = 0; i < v4.size(); i++)
+		{
+			temp = v4[i] / 10;
+
+			if (temp == StudentNumber)
+			{
+				v4.erase(v4.begin() + i);
+			}
+		}
+
+		for (int i = 0; i < v3.size(); i++)
+		{
+			temp = v3[i] / 10;
+
+			if (temp == StudentNumber)
+			{
+				v3.erase(v3.begin() + i);
+			}
+		}
+	}
+
 	FileManager()
 	{
-		studentCount = checkForStudentCount();
+		fileRead.open("StudentsData.txt");
 
-		if (studentCount != 0)
+		if (fileRead.is_open())
 		{
-			checkRBNumber(studentCount);
+			fileRead.close();
+
+			studentCount = checkForStudentCount();
+
+			if (studentCount != 0)
+			{
+				checkRBNumber(studentCount);
+			}
 		}
 	}
 
@@ -1184,6 +1241,8 @@ class MenuPattern : public FileManager
 
 	int menu; // Переменная выбора опции
 
+	int flag = 0;
+
 public:
 
 	/// <summary>
@@ -1200,10 +1259,25 @@ public:
 		cin >> menu;
 		cout << endl;
 
+		if ((menu > 1) && (menu < 7))
+		{
+			openToRead(mode);
+
+			if (!(fileRead.is_open()))
+			{
+				system("cls");
+				return 1;
+			}
+
+			fileRead.close();
+		}
+
 		switch (menu)
 		{
 		case 1:
 		{
+			flag = 1;
+
 			openToWrite();
 
 			system("pause");
@@ -1212,10 +1286,40 @@ public:
 		}
 		case 2:
 		{
-			writeInFile();
+			if (flag == 0)
+			{
+				createNewTemporaryFile(mode);
 
-			cout << endl;
-			system("pause");
+				saveOldData(-1);
+
+				copyFromOldData(0, oldData.size());
+
+				writeInFile();
+
+				if (mode == 0)
+				{
+					mode = 1;
+
+					remove("StudentsData.txt");
+				}
+				else
+				{
+					mode = 0;
+
+					remove("TemporaryStudentsData.txt");
+				}
+
+				cout << endl;
+				system("pause");
+			}
+			else
+			{
+				writeInFile();
+
+				cout << endl;
+				system("pause");
+			}
+
 			system("cls");
 			return 1;
 		}
@@ -1342,6 +1446,8 @@ public:
 			system("pause");
 			system("cls");
 
+			oldData.clear();
+
 			return 1;
 		}
 		case 5:
@@ -1381,12 +1487,6 @@ public:
 			}
 
 			countStudentsPerfomance();
-
-			for (int i = 0; i < v5.size(); i++)
-			{
-				cout << "\n -- " << v5[i] << " -- \n";
-			}
-			system("pause");
 
 		A1:
 			cout << "\nВведите номер сессии -> ";
@@ -1450,7 +1550,6 @@ int Student::studentCount = 0;
 /// <returns>Возвращает 0 при успешном завершении</returns>
 int main()
 {
-
 	int indicator = 1;
 
 	SetConsoleCP(1251);
