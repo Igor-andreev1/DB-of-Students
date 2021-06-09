@@ -1,21 +1,10 @@
 ﻿
-// Проверить вводы данных
-// Добавить полное описание
-// 
-// Иcпользовать виртуальные функции
-// Иcпользовать перегрузка операторов
-
-// Сделать блок-схему
-// Подготовить отчёт
-
 #include <iostream>
-#include <locale>
 #include <fstream>
 #include <string>
 #include <windows.h>
 #include <vector>
 #include <conio.h>
-#include <cstdio>
 
 using namespace std;
 
@@ -1535,6 +1524,9 @@ public:
 			cout << "\nОшибка ввода!!!!\nПовторите попытку\n";
 			system("pause");
 			system("cls");
+
+			while (kbhit()) getch();
+
 			return 1;
 		}
 		}
