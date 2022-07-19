@@ -1,2 +1,2 @@
 TODO:
-- Подкорректировать весь проект
+- Correct all this cringe xD
