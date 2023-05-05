@@ -1,2 +1,1 @@
-TODO:
-- Correct all this cringe xD
+# Ready!
